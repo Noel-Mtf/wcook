@@ -1,14 +1,740 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="wCook - When We Cook">
+  <meta name="keywords" content="Szakácskönyv, Receptek, Recept, Étel, Finom, wCook, wcook, https://wcook-40414331-83db7.web.app/, Ebéd, Reggeli, Vacsora, Italok, Ünnepi, Hagyomány, When We Cook">
+  <title>wCook</title>
+  <link rel="shortcut icon" href="/favicon.ico?v=2" type="image/x-icon">
+  <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Lato', sans-serif; background-color:#f3f4f6; background-image:url("https://www.transparenttextures.com/patterns/cubes.png"); }
+    h1,h2,h3,.serif-font{ font-family:'Playfair Display', serif; }
+    .book-texture{ background-color:#fffef0; background-image:url("https://www.transparenttextures.com/patterns/cream-paper.png"); box-shadow:0 4px 6px rgba(0,0,0,0.06); }
+    .recipe-card:hover{ transform:translateY(-5px); box-shadow:0 10px 15px rgba(0,0,0,0.08); }
+    .modal-overlay{ backdrop-filter: blur(5px); }
+    ::-webkit-scrollbar{ width:8px; } ::-webkit-scrollbar-track{ background:#f1f1f1 } ::-webkit-scrollbar-thumb{ background:#888; border-radius:4px } ::-webkit-scrollbar-thumb:hover{ background:#555 }
+    .category-btn.active{ background-color:#7f1d1d; color:white; border-color:#7f1d1d }
+    .circle-avatar{ width:40px; height:40px; border-radius:9999px; object-fit:cover; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.2) }
+    .hidden{ display:none }
+    .search-area { display:flex; gap:0.5rem; align-items:center; width:100%; }
+    .search-input { flex:1; padding-right: 3.5rem; }
+    @media(min-width:768px){ .search-input { padding-right: 7.5rem; } }
+    .search-inline-btn { margin-left: -3.25rem; background:transparent; border:none; cursor:pointer; color:#6b7280; }
+    #uploadModal, #authModal, #recipeModal, #myRecipesModal { z-index: 9999; }
+    #uploadModal .inner-panel { position:relative; z-index:10000; }
+  </style>
 </head>
-<body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+<body class="text-gray-800 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-red-900 text-amber-50 shadow-lg sticky top-0 z-40">
+    <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center space-x-3 mb-4 md:mb-0">
+        <i class="fas fa-utensils text-2xl"></i>
+        <h1 class="text-2xl md:text-3xl font-bold italic">wCook<br><span class="text-sm">When we cook</span></h1>
+      </div>
+
+      <!-- Search + actions area -->
+      <div class="w-full md:w-1/2 relative flex items-center">
+        <div class="search-area w-full items-center">
+          <input type="text" id="searchInput" placeholder="Keress receptet (pl. gulyás, pizza, sushi)..." class="search-input w-full px-4 py-2 rounded-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-inner">
+          <button id="searchBtn" class="search-inline-btn p-2"><i class="fas fa-search"></i></button>
+
+          <button id="addRecipeBtn" title="Új recept feltöltése" class="ml-2 bg-amber-400 text-red-900 rounded-full p-2 hidden hover:scale-105 transition">
+            <i class="fas fa-plus"></i>
+          </button>
+
+          <div id="authArea" class="ml-2 flex items-center space-x-2">
+            <button id="loginBtn" class="bg-white text-red-900 px-3 py-1 rounded-full font-semibold">Bejelentkezés</button>
+            <button id="registerBtn" class="bg-white/80 text-red-900 px-3 py-1 rounded-full font-semibold">Regisztráció</button>
+            <img id="profileAvatar" class="circle-avatar hidden cursor-pointer" alt="Profil" title="Profil">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="bg-white text-gray-800 shadow-md">
+      <div class="container mx-auto px-4 py-2 overflow-x-auto whitespace-nowrap flex justify-center space-x-2 md:space-x-6" id="categoryContainer">
+        <button data-cat="all" class="category-btn active px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Összes</button>
+        <button data-cat="leves" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Levesek</button>
+        <button data-cat="foetel" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Főételek</button>
+        <button data-cat="desszert" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Desszertek</button>
+        <button data-cat="teszta" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Tészták & Köretek</button>
+        <button data-cat="unnepi" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Ünnepi</button>
+        <button data-cat="kulfoldi kulonlegessegek" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition font-bold text-red-800"><i class="fas fa-globe mr-1"></i>Világkonyha</button>
+        <button data-cat="reggelik" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Reggelik</button>
+        <button data-cat="vacsorak" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Vacsorák</button>
+        <button data-cat="italok" class="category-btn px-4 py-2 rounded-full border border-gray-200 hover:bg-red-50 transition">Italok</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="container mx-auto px-4 py-8">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl md:text-4xl font-bold text-red-900 mb-2 serif-font">Üdvözöllek a konyhámban!</h2>
+      <p class="text-gray-600 max-w-2xl mx-auto italic">"Az étel nemcsak táplálék, hanem szeretet, amit megosztunk egymással."</p>
+    </div>
+
+    <div id="recipeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+
+    <div id="noResults" class="hidden text-center py-12">
+      <i class="fas fa-search text-4xl text-gray-300 mb-4"></i>
+      <p class="text-xl text-gray-500">Sajnos nem találtam ilyen receptet.</p>
+    </div>
+  </main>
+
+  <!-- Recipe Modal -->
+  <div id="recipeModal" class="fixed inset-0 hidden modal-overlay bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="bg-white book-texture rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col md:flex-row overflow-hidden relative">
+      <button id="closeModalBtn" class="absolute top-4 right-4 z-10 bg-white/80 rounded-full p-2 hover:bg-red-100 transition">
+        <i class="fas fa-times text-xl text-red-900"></i>
+      </button>
+
+      <div class="w-full md:w-1/3 h-48 md:h-full bg-gray-200">
+        <img id="modalImage" src="" alt="Étel fotó" class="w-full h-full object-cover">
+      </div>
+
+      <div class="w-full md:w-2/3 p-6 md:p-8 overflow-y-auto">
+        <span id="modalCategory" class="text-xs font-bold tracking-widest uppercase text-red-800 mb-2 block">Kategória</span>
+        <h2 id="modalTitle" class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 serif-font border-b-2 border-red-100 pb-2">Recept Neve</h2>
+
+        <div class="flex space-x-6 text-sm text-gray-600 mb-6">
+          <div class="flex items-center"><i class="far fa-clock mr-2"></i> <span id="modalTime">Perc</span></div>
+          <div class="flex items-center"><i class="fas fa-signal mr-2"></i> <span id="modalDifficulty">Nehézség</span></div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h3 class="text-xl font-bold text-red-900 mb-3 serif-font"><i class="fas fa-carrot mr-2"></i>Hozzávalók</h3>
+            <ul id="modalIngredients" class="list-disc list-inside space-y-1 text-gray-700 text-sm md:text-base marker:text-red-400"></ul>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-red-900 mb-3 serif-font"><i class="fas fa-list-ol mr-2"></i>Elkészítés</h3>
+            <div id="modalInstructions" class="space-y-3 text-gray-700 leading-relaxed text-sm md:text-base text-justify"></div>
+          </div>
+        </div>
+
+        <div class="mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+          <p class="italic text-gray-700 text-sm"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i><span id="modalTip">Tipp a szakácstól...</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="fixed inset-0 hidden modal-overlay bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+      <button id="closeAuthModalBtn" class="absolute right-4 top-4 text-gray-500 hover:text-red-900"><i class="fas fa-times"></i></button>
+
+      <div id="authTabs" class="space-y-4">
+        <div class="flex justify-center space-x-2 mb-2">
+          <button id="tabLogin" class="px-4 py-2 bg-red-900 text-white rounded">Bejelentkezés</button>
+          <button id="tabRegister" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">Regisztráció</button>
+        </div>
+
+        <div id="loginForm" class="">
+          <input id="loginEmail" type="email" placeholder="E-mail" class="w-full mb-2 px-3 py-2 border rounded" />
+          <input id="loginPassword" type="password" placeholder="Jelszó" class="w-full mb-2 px-3 py-2 border rounded" />
+          <div class="flex justify-between items-center">
+            <button id="doLogin" class="px-4 py-2 bg-red-900 text-white rounded">Bejelentkezés</button>
+            <button id="forgotPassword" class="text-sm text-gray-600 underline">Elfelejtett jelszó</button>
+          </div>
+          <p id="authMessageLogin" class="text-sm text-red-600 mt-2"></p>
+        </div>
+
+        <div id="registerForm" class="hidden">
+          <input id="regDisplayName" type="text" placeholder="Felhasználónév" class="w-full mb-2 px-3 py-2 border rounded" />
+          <input id='regEmail' type="email" placeholder="E-mail" class="w-full mb-2 px-3 py-2 border rounded" />
+          <input id="regPassword" type="password" placeholder="Jelszó (min. 6)" class="w-full mb-2 px-3 py-2 border rounded" />
+          <label class="text-sm text-gray-600 mb-1 block">Profilkép (opcionális)</label>
+          <input id="regAvatar" type="file" accept="image/*" class="w-full mb-2" />
+          <div class="flex justify-end">
+            <button id="doRegister" class="px-4 py-2 bg-red-900 text-white rounded">Regisztráció</button>
+          </div>
+          <p id="authMessageReg" class="text-sm text-red-600 mt-2"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Recipes Modal -->
+  <div id="myRecipesModal" class="fixed inset-0 hidden modal-overlay bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 max-h-[80vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">Recepteim</h3>
+        <button id="closeMyRecipesBtn" class="text-gray-500 hover:text-red-900"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="myRecipesList" class="space-y-2"></div>
+      <p id="myRecipesMsg" class="text-sm text-red-600 mt-3"></p>
+    </div>
+  </div>
+
+  <!-- Upload Modal -->
+  <div id="uploadModal" class="fixed inset-0 hidden modal-overlay bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 overflow-y-auto max-h-[90vh] inner-panel">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">Új recept feltöltése</h3>
+        <button id="closeUploadModalBtn" class="text-gray-500 hover:text-red-800"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="space-y-3">
+        <label class="block"><span class="text-sm font-semibold">Étel neve</span><input id="uploadTitle" type="text" class="w-full mt-1 px-3 py-2 border rounded" placeholder="Pl. Klasszikus Gulyásleves" autofocus></label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <label><span class="text-sm font-semibold">Kategória</span>
+            <select id="uploadCategory" class="w-full mt-1 px-3 py-2 border rounded">
+              <option value="leves">Levesek</option><option value="foetel">Főételek</option><option value="desszert">Desszertek</option>
+              <option value="teszta">Tészták & Köretek</option><option value="unnepi">Ünnepi & Hagyomány</option><option value="kulfoldi kulonlegessegek">Világkonyha</option>
+              <option value="reggelik">Reggelik</option><option value="vacsorak">Vacsorák</option><option value="italok">Italok</option>
+            </select>
+          </label>
+          <label><span class="text-sm font-semibold">Idő</span><input id="uploadTime" type="text" class="w-full mt-1 px-3 py-2 border rounded" placeholder="Pl. 60 perc"></label>
+          <label><span class="text-sm font-semibold">Nehézség</span>
+            <select id="uploadDifficulty" class="w-full mt-1 px-3 py-2 border rounded"><option>Könnyű</option><option>Közepes</option><option>Nehéz</option></select>
+          </label>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center">
+            <h4 class="font-semibold">Hozzávalók</h4>
+            <button id="addIngredientBtn" class="text-amber-500"><i class="fas fa-plus"></i> Hozzáad</button>
+          </div>
+          <div id="ingredientsList" class="space-y-2 mt-2"><div class="flex space-x-2"><input class="ingredientInput flex-grow px-3 py-2 border rounded" placeholder="Pl. 60 dkg marhalábszár" /><button class="removeIng px-3 py-2 bg-gray-200 rounded hidden"><i class="fas fa-trash"></i></button></div></div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center">
+            <h4 class="font-semibold">Elkészítés (sorokban)</h4>
+            <button id="addInstructionBtn" class="text-amber-500"><i class="fas fa-plus"></i> Hozzáad</button>
+          </div>
+          <div id="instructionsList" class="space-y-2 mt-2"><div class="flex space-x-2"><input class="instructionInput flex-grow px-3 py-2 border rounded" placeholder="1. lépés" /><button class="removeIns px-3 py-2 bg-gray-200 rounded hidden"><i class="fas fa-trash"></i></button></div></div>
+        </div>
+
+        <div><label class="block"><span class="text-sm font-semibold">Tipp (opcionális)</span><input id="uploadTip" type="text" class="w-full mt-1 px-3 py-2 border rounded" placeholder="Tipp a szakácstól"></label></div>
+
+        <div><label class="text-sm font-semibold block mb-1">Étel képe (opcionális)</label><input id="uploadImage" type="file" accept="image/*" class="w-full" /></div>
+
+        <div class="flex justify-end space-x-2"><button id="submitRecipeBtn" class="px-4 py-2 bg-red-900 text-white rounded">Feltöltés</button><button id="cancelUploadBtn" class="px-4 py-2 bg-gray-200 rounded">Mégsem</button></div>
+        <p id="uploadMsg" class="text-sm text-red-600"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase + App logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail, sendEmailVerification, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    import { getDatabase, ref as rtdbRef, set as rtdbSet, get as rtdbGet, remove as rtdbRemove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+    // YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqz53nwQ3HELlpcl5Ens9zzmAxvwpNqh0",
+      authDomain: "wcook-149d5.firebaseapp.com",
+      projectId: "wcook-149d5",
+      storageBucket: "wcook-149d5.appspot.com",
+      messagingSenderId: "721485124128",
+      appId: "1:721485124128:web:7d5674f27715ee7e8de245",
+      measurementId: "G-1DSVKMZCDM"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const rtdb = getDatabase(app);
+
+    let user = null;
+    let firestoreRecipes = [];
+    const rtdbImageCache = {}; // cache images from RTDB by key ( e.g. "images/123" )
+
+    /* UI elems */
+    const recipeGrid = document.getElementById('recipeGrid');
+    const searchInput = document.getElementById('searchInput');
+    const noResults = document.getElementById('noResults');
+    const categoryBtns = document.querySelectorAll('.category-btn');
+
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const profileAvatar = document.getElementById('profileAvatar');
+    const addRecipeBtn = document.getElementById('addRecipeBtn');
+
+    const authModal = document.getElementById('authModal');
+    const uploadModal = document.getElementById('uploadModal');
+    const recipeModal = document.getElementById('recipeModal');
+    const myRecipesModal = document.getElementById('myRecipesModal');
+
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const doLogin = document.getElementById('doLogin');
+    const doRegister = document.getElementById('doRegister');
+
+    /* Helpers */
+    function removeDiacritics(str){ if(!str) return ''; return str.normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-zA-Z0-9\s-]/g,''); }
+    function getCategoryName(cat){
+      const map = {'leves':'Levesek','foetel':'Főételek','desszert':'Desszertek','teszta':'Tészták & Köretek','unnepi':'Ünnepi & Hagyomány','kulfoldi kulonlegessegek':'Világkonyha','reggelik':'Reggelik','vacsorak':'Vacsorák','italok':'Italok'};
+      return map[cat] || 'Egyéb';
+    }
+    function unsplashFor(recipe){ return `https://source.unsplash.com/600x400/?${encodeURIComponent(recipe.imageKeyword || recipe.title)},food`; }
+    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, m=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+
+    /* RTDB image helpers */
+    async function saveImageToRTDB(pathKey, dataURL){
+      try{
+        await rtdbSet(rtdbRef(rtdb, pathKey), dataURL);
+        rtdbImageCache[pathKey] = dataURL;
+        return true;
+      }catch(err){ console.error('RTDB save error', err); return false; }
+    }
+    async function fetchImageFromRTDB(pathKey){
+      if(!pathKey) return null;
+      if(rtdbImageCache[pathKey]) return rtdbImageCache[pathKey];
+      try{
+        const snap = await rtdbGet(rtdbRef(rtdb, pathKey));
+        if(snap && snap.exists()){
+          const data = snap.val();
+          rtdbImageCache[pathKey] = data;
+          return data;
+        }
+      }catch(err){ console.error('RTDB get error', err); }
+      return null;
+    }
+    async function removeImageFromRTDB(pathKey){
+      if(!pathKey) return;
+      try{ await rtdbRemove(rtdbRef(rtdb, pathKey)); delete rtdbImageCache[pathKey]; }catch(e){ console.warn('RTDB remove failed', e); }
+    }
+
+    /* Rendering */
+    async function renderRecipes(list){
+      recipeGrid.innerHTML = '';
+      const data = list || firestoreRecipes;
+      if((data || []).length === 0){ noResults.classList.remove('hidden'); return; } else noResults.classList.add('hidden');
+
+      // Preload visible images from RTDB (for recipes that have imageKey)
+      const promises = data.map(async r => {
+        if(r.imageKey && !rtdbImageCache[r.imageKey]){
+          const img = await fetchImageFromRTDB(r.imageKey);
+          if(img) rtdbImageCache[r.imageKey] = img;
+        }
+      });
+      await Promise.all(promises);
+
+      data.forEach(recipe=>{
+        const card = document.createElement('div');
+        card.className = 'recipe-card bg-white rounded-lg overflow-hidden shadow-md cursor-pointer h-full flex flex-col transition duration-300';
+        card.addEventListener('click', (e)=>{ e.stopPropagation(); openModal(recipe); });
+
+        // Prefer RTDB image if present in cache, else unsplash fallback
+        const imgSrc = (recipe.imageKey && rtdbImageCache[recipe.imageKey]) ? rtdbImageCache[recipe.imageKey] : unsplashFor(recipe);
+
+        card.innerHTML = `
+          <div class="h-48 overflow-hidden relative group">
+            <img src="${imgSrc}" alt="${escapeHtml(recipe.title)}" class="w-full h-full object-cover transform group-hover:scale-110 transition duration-500" onerror="this.src='https://placehold.co/600x400?text=Recept+Fotó'">
+            <div class="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded text-xs font-bold text-red-800 shadow">${recipe.time || ''}</div>
+          </div>
+          <div class="p-4 flex-grow flex flex-col justify-between book-texture">
+            <div>
+              <span class="text-xs font-bold text-red-600 uppercase tracking-wide">${getCategoryName(recipe.category)}</span>
+              <h3 class="text-xl font-bold text-gray-800 mb-2 serif-font leading-tight mt-1">${escapeHtml(recipe.title)}</h3>
+              <p class="text-gray-600 text-sm line-clamp-2 mb-3">${escapeHtml(recipe.tip || '')}</p>
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-500 border-t border-gray-200 pt-3 mt-2">
+              <span><i class="fas fa-signal mr-1"></i> ${recipe.difficulty || ''}</span>
+              <span class="text-red-700 font-semibold group-hover:underline">Recept megtekintése &rarr;</span>
+            </div>
+          </div>
+        `;
+        recipeGrid.appendChild(card);
+      });
+    }
+
+    function openModal(recipe){
+      const rtImg = recipe.imageKey ? rtdbImageCache[recipe.imageKey] : null;
+      document.getElementById('modalImage').src = rtImg || `https://source.unsplash.com/800x600/?${encodeURIComponent(recipe.imageKeyword || recipe.title)},food`;
+      document.getElementById('modalCategory').innerText = getCategoryName(recipe.category);
+      document.getElementById('modalTitle').innerText = recipe.title;
+      document.getElementById('modalTime').innerText = recipe.time || '';
+      document.getElementById('modalDifficulty').innerText = recipe.difficulty || '';
+      document.getElementById('modalTip').innerText = recipe.tip || '';
+      const ingList = document.getElementById('modalIngredients'); ingList.innerHTML = (recipe.ingredients || []).map(i => `<li>${escapeHtml(i)}</li>`).join('');
+      const instList = document.getElementById('modalInstructions'); instList.innerHTML = (recipe.instructions || []).map((step, index) => `<div class="flex"><span class="font-bold text-red-900 mr-2">${index+1}.</span><p>${escapeHtml(step)}</p></div>`).join('');
+      recipeModal.classList.remove('hidden'); document.body.style.overflow = 'hidden';
+    }
+    function closeModal(){ recipeModal.classList.add('hidden'); document.body.style.overflow = 'auto'; }
+
+    /* Auth UI & logic */
+    loginBtn.addEventListener('click', ()=>openAuthModal('login'));
+    registerBtn.addEventListener('click', ()=>openAuthModal('register'));
+    profileAvatar.addEventListener('click', openProfileMenu);
+    addRecipeBtn.addEventListener('click', ()=>{ if(user && user.emailVerified) openUploadModal(); else openAuthModal('login'); });
+
+    function openAuthModal(tab='login'){ authModal.classList.remove('hidden'); showAuthTab(tab); }
+    function closeAuthModal(){ authModal.classList.add('hidden'); }
+    tabLogin.addEventListener('click', ()=> showAuthTab('login'));
+    tabRegister.addEventListener('click', ()=> showAuthTab('register'));
+    function showAuthTab(tab){
+      if(tab === 'login'){ tabLogin.classList.add('bg-red-900','text-white'); tabRegister.classList.remove('bg-red-900','text-white'); loginForm.classList.remove('hidden'); registerForm.classList.add('hidden'); }
+      else { tabRegister.classList.add('bg-red-900','text-white'); tabLogin.classList.remove('bg-red-900','text-white'); registerForm.classList.remove('hidden'); loginForm.classList.add('hidden'); }
+    }
+
+    // REGISTER
+    doRegister.addEventListener('click', async ()=>{
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const displayName = document.getElementById('regDisplayName').value.trim();
+      const avatarFile = document.getElementById('regAvatar').files[0];
+      const msgEl = document.getElementById('authMessageReg'); msgEl.innerText = '';
+      if(!email || !password || password.length < 6 || !displayName){ msgEl.innerText = 'Adj meg nevet, emailt és legalább 6 karakteres jelszót.'; return; }
+      try{
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = cred.user;
+        await updateProfile(newUser, { displayName });
+        // If avatar provided, save to RTDB and set avatar locally
+        if(avatarFile){
+          try{
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+              const dataURL = e.target.result;
+              const pathKey = `images/profile_${newUser.uid}`;
+              await saveImageToRTDB(pathKey, dataURL);
+              // Update profile photoURL to dataURL so auth profile shows it (optional)
+              try{ await updateProfile(newUser, { photoURL: dataURL }); }catch(_){}
+            };
+            reader.readAsDataURL(avatarFile);
+          }catch(err){ console.warn('Avatar save to RTDB failed', err); }
+        }
+        await sendEmailVerification(newUser);
+        await signOut(auth);
+        closeAuthModal();
+        alert('Regisztrációd sikeres. Ellenőrizd az e-mail fiókodat és kattints a megerősítő linkre.');
+      }catch(err){ console.error(err); msgEl.innerText = err.message || 'Regisztráció sikertelen.'; }
+    });
+
+    // LOGIN
+    doLogin.addEventListener('click', async ()=>{
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const msgEl = document.getElementById('authMessageLogin'); msgEl.innerText = '';
+      if(!email || !password){ msgEl.innerText = 'Adj meg emailt és jelszót.'; return; }
+      try{
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        const loggedUser = cred.user;
+        if(!loggedUser.emailVerified){
+          try{ await sendEmailVerification(loggedUser); }catch(e){ console.warn('Could not send verification', e); }
+          await signOut(auth);
+          msgEl.innerText = 'A fiókod nincs megerősítve. Küldtünk egy megerősítő e-mailt.';
+          return;
+        }
+        closeAuthModal();
+      }catch(err){ console.error(err); msgEl.innerText = err.message || 'Bejelentkezés sikertelen.'; }
+    });
+
+    document.getElementById('forgotPassword').addEventListener('click', async ()=>{
+      const email = document.getElementById('loginEmail').value.trim();
+      if(!email){ alert('Add meg a regisztrált e-mail címed a jelszó visszaállításhoz.'); return; }
+      try{ await sendPasswordResetEmail(auth, email); alert('Jelszó-visszaállító e-mail elküldve.'); }catch(err){ alert('Hiba történt: ' + (err.message || err)); }
+    });
+
+    async function signOutUser(){ await signOut(auth); }
+
+    /* Auth state listener: update UI and load profile image from RTDB if exists */
+    onAuthStateChanged(auth, async (u)=>{
+      if(u && !u.emailVerified) user = null; else user = u;
+      updateAuthUI();
+      if(user){
+        // try to load profile image from RTDB
+        const key = `images/profile_${user.uid}`;
+        const img = await fetchImageFromRTDB(key);
+        if(img){ profileAvatar.src = img; } else {
+          profileAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'U')}&background=FEEBC8&color=7F1D1D`;
+        }
+      }
+    });
+
+    function updateAuthUI(){
+      if(user){
+        loginBtn.classList.add('hidden'); registerBtn.classList.add('hidden'); addRecipeBtn.classList.remove('hidden');
+        // profileAvatar.src is set above (from RTDB or auth)
+        profileAvatar.classList.remove('hidden');
+      } else {
+        loginBtn.classList.remove('hidden'); registerBtn.classList.remove('hidden'); addRecipeBtn.classList.add('hidden'); profileAvatar.classList.add('hidden');
+      }
+    }
+
+    /* Profile menu: improved positioning and RTDB profile pic save */
+    function openProfileMenu(){
+      if(!user) return;
+
+      // remove existing
+      const existing = document.getElementById('profileMenuLocal');
+      if(existing) existing.remove();
+
+      const menu = document.createElement('div');
+      menu.id = 'profileMenuLocal';
+      menu.className = 'bg-white shadow-lg rounded p-3';
+      Object.assign(menu.style, {
+        position: 'fixed',
+        zIndex: 99999,
+        visibility: 'hidden',
+        maxWidth: '320px',
+        width: 'min(90vw, 320px)',
+        maxHeight: '70vh',
+        overflowY: 'auto',
+        boxShadow: '0 10px 20px rgba(0,0,0,0.12)'
+      });
+
+      menu.innerHTML = `
+        <div class="flex items-center space-x-3 mb-2">
+          <img src="${profileAvatar.src}" class="w-12 h-12 rounded-full" />
+          <div>
+            <div class="font-bold">${escapeHtml(user.displayName || user.email)}</div>
+            <div class="text-xs text-gray-500">${escapeHtml(user.email)}</div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <button id="myRecipesBtn" class="w-full px-3 py-2 bg-gray-100 rounded">Recepteim</button>
+          <button id="deleteAccountBtn" class="w-full px-3 py-2 bg-red-600 text-white rounded">Fiók törlése</button>
+          <label class="block text-sm text-gray-700 mt-2">Profilkép feltöltése</label>
+          <input id="profilePicInput" type="file" accept="image/*" class="mb-2" />
+          <button id="saveProfilePic" class="w-full px-3 py-2 bg-amber-400 text-red-900 rounded mb-2">Mentés</button>
+          <button id="logoutBtn" class="w-full px-3 py-2 bg-gray-100 rounded">Kijelentkezés</button>
+        </div>
+      `;
+
+      document.body.appendChild(menu);
+
+      // position relative to avatar
+      const avatarRect = profileAvatar.getBoundingClientRect();
+      const viewportW = window.innerWidth;
+      const viewportH = window.innerHeight;
+      const menuWidth = Math.min(320, Math.floor(viewportW * 0.9));
+      // Compute top
+      let top = avatarRect.bottom + 8;
+      let left = Math.max(10, Math.min(viewportW - menuWidth - 10, avatarRect.right - menuWidth));
+      // try above if no space below
+      const estimatedMenuHeight = 200; // approximate
+      if(top + estimatedMenuHeight + 10 > viewportH){
+        const altTop = avatarRect.top - estimatedMenuHeight - 8;
+        if(altTop > 10) top = altTop;
+        else top = Math.max(10, viewportH - estimatedMenuHeight - 10);
+      }
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+      menu.style.visibility = 'visible';
+
+      function cleanup(){ const el=document.getElementById('profileMenuLocal'); if(el) el.remove(); document.removeEventListener('click', onDocClick); window.removeEventListener('resize', onResize); }
+
+      document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+        cleanup(); await signOutUser();
+      });
+
+      document.getElementById('saveProfilePic').addEventListener('click', async ()=>{
+        const file = document.getElementById('profilePicInput').files[0];
+        if(!file){ alert('Válassz egy képet.'); return; }
+        try{
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const dataURL = e.target.result;
+            const pathKey = `images/profile_${user.uid}`;
+            const ok = await saveImageToRTDB(pathKey, dataURL);
+            if(ok){
+              // update cache and UI
+              rtdbImageCache[pathKey] = dataURL;
+              profileAvatar.src = dataURL;
+              // Optionally update auth profile photoURL to dataURL
+              try{ await updateProfile(user, { photoURL: dataURL }); }catch(_){}
+              cleanup();
+            } else {
+              alert('Profilkép mentése sikertelen.');
+            }
+          };
+          reader.readAsDataURL(file);
+        }catch(err){ console.error('Profile pic RTDB save failed', err); alert('Profilkép feltöltése sikertelen: ' + (err.message||err)); }
+      });
+
+      document.getElementById('myRecipesBtn').addEventListener('click', ()=>{
+        cleanup(); openMyRecipes();
+      });
+
+      document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>{
+        if(!confirm('Biztosan törlöd a fiókodat? Ez a művelet végleges. A recepteid megmaradnak.')) return;
+        const pwd = prompt('Add meg a jelszavad a fiók törléséhez:');
+        if(pwd === null) return;
+        if(!pwd){ alert('Nem adtál meg jelszót.'); return; }
+        try{
+          const credential = EmailAuthProvider.credential(user.email, pwd);
+          await reauthenticateWithCredential(user, credential);
+          try{
+            // Optionally remove profile image from RTDB
+            const profileKey = `images/profile_${user.uid}`;
+            try{ await removeImageFromRTDB(profileKey); }catch(e){ console.warn('Could not remove profile image', e); }
+            await deleteUser(user);
+            alert('Fiókod sikeresen törölve.');
+            try{ await signOut(auth); }catch(e){}
+            location.reload();
+          }catch(delErr){
+            console.error('Delete user failed', delErr);
+            alert('Fiók törlése sikertelen: ' + (delErr.message || delErr));
+          }
+        }catch(reauthErr){
+          console.error('Reauth failed', reauthErr);
+          alert('A megadott jelszó helytelen, vagy a re-authentikáció sikertelen. A fiók nem lett törölve.');
+        }
+      });
+
+      function onDocClick(e){ if(!menu.contains(e.target) && e.target !== profileAvatar) cleanup(); }
+      function onResize(){ cleanup(); }
+      setTimeout(()=> document.addEventListener('click', onDocClick), 10);
+      window.addEventListener('resize', onResize);
+    }
+
+    /* My Recipes modal */
+    function openMyRecipes(){
+      if(!user){ alert('Előbb jelentkezz be.'); return; }
+      const listEl = document.getElementById('myRecipesList');
+      const msgEl = document.getElementById('myRecipesMsg'); listEl.innerHTML = ''; msgEl.innerText = '';
+      const my = (firestoreRecipes || []).filter(r => r.createdBy === user.uid);
+      if(my.length === 0){ listEl.innerHTML = '<p class="text-gray-600">Nincsenek feltöltött receptjeid.</p>'; myRecipesModal.classList.remove('hidden'); document.body.style.overflow='hidden'; return; }
+
+      // Preload image keys for these recipes
+      Promise.all(my.map(r => r.imageKey ? fetchImageFromRTDB(r.imageKey) : null)).then(()=> {
+        my.forEach(r=>{
+          const row = document.createElement('div'); row.className='flex items-center justify-between p-2 border rounded';
+          const title = document.createElement('button'); title.className='text-left text-blue-700 underline'; title.textContent = r.title || '(név nélküli)';
+          title.addEventListener('click', ()=>{ closeMyRecipes(); openModal(r); });
+          const right = document.createElement('div');
+          const delBtn = document.createElement('button'); delBtn.className='ml-2 px-2 py-1 bg-red-600 text-white rounded'; delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+          delBtn.addEventListener('click', async ()=> {
+            if(!confirm('Biztos törlöd a receptet?')) return;
+            try{
+              if(r.imageKey){
+                try{ await removeImageFromRTDB(r.imageKey); }catch(e){ console.warn('Could not delete image', e); }
+              }
+              await deleteDoc(doc(db,'recipes', r.id));
+              msgEl.innerText = 'Sikeres törlés.';
+            }catch(err){ console.error('Delete recipe failed', err); msgEl.innerText = 'Törlés sikertelen: ' + (err.message||err); }
+          });
+          right.appendChild(delBtn);
+          row.appendChild(title); row.appendChild(right);
+          listEl.appendChild(row);
+        });
+      });
+
+      myRecipesModal.classList.remove('hidden'); document.body.style.overflow='hidden';
+    }
+    function closeMyRecipes(){ myRecipesModal.classList.add('hidden'); document.body.style.overflow='auto'; }
+    document.getElementById('closeMyRecipesBtn').addEventListener('click', closeMyRecipes);
+
+    /* Upload logic (store image in RTDB under images/{recipeId}) */
+    const ingredientsListEl = document.getElementById('ingredientsList');
+    const instructionsListEl = document.getElementById('instructionsList');
+    document.getElementById('addIngredientBtn').addEventListener('click', ()=> addIngredientField(''));
+    document.getElementById('addInstructionBtn').addEventListener('click', ()=> addInstructionField(''));
+    function addIngredientField(value){ const wrapper=document.createElement('div'); wrapper.className='flex space-x-2'; const input=document.createElement('input'); input.className='ingredientInput flex-grow px-3 py-2 border rounded'; input.placeholder='Pl. 60 dkg marhalábszár'; input.value=value||''; const removeBtn=document.createElement('button'); removeBtn.className='removeIng px-3 py-2 bg-gray-200 rounded'; removeBtn.innerHTML='<i class="fas fa-trash"></i>'; removeBtn.addEventListener('click', ()=> wrapper.remove()); wrapper.appendChild(input); wrapper.appendChild(removeBtn); ingredientsListEl.appendChild(wrapper); }
+    function addInstructionField(value){ const wrapper=document.createElement('div'); wrapper.className='flex space-x-2'; const input=document.createElement('input'); input.className='instructionInput flex-grow px-3 py-2 border rounded'; input.placeholder='Lépés leírása'; input.value=value||''; const removeBtn=document.createElement('button'); removeBtn.className='removeIns px-3 py-2 bg-gray-200 rounded'; removeBtn.innerHTML='<i class="fas fa-trash"></i>'; removeBtn.addEventListener('click', ()=> wrapper.remove()); wrapper.appendChild(input); wrapper.appendChild(removeBtn); instructionsListEl.appendChild(wrapper); }
+
+    function openUploadModal(){ if(!auth.currentUser || !auth.currentUser.emailVerified){ openAuthModal('login'); alert('Előbb jelentkezz be és erősítsd meg e-mail címedet.'); return; } uploadModal.classList.remove('hidden'); document.body.style.overflow='hidden'; if(!ingredientsListEl.querySelector('.ingredientInput')) addIngredientField(''); if(!instructionsListEl.querySelector('.instructionInput')) addInstructionField(''); document.getElementById('uploadTitle').focus(); }
+    function closeUploadModal(){ uploadModal.classList.add('hidden'); document.body.style.overflow='auto'; document.getElementById('uploadTitle').value=''; document.getElementById('uploadTime').value=''; document.getElementById('uploadTip').value=''; document.getElementById('uploadImage').value=''; ingredientsListEl.innerHTML = '<div class="flex space-x-2"><input class="ingredientInput flex-grow px-3 py-2 border rounded" placeholder="Pl. 60 dkg marhalábszár" /><button class="removeIng px-3 py-2 bg-gray-200 rounded hidden"><i class="fas fa-trash"></i></button></div>'; instructionsListEl.innerHTML = '<div class="flex space-x-2"><input class="instructionInput flex-grow px-3 py-2 border rounded" placeholder="1. lépés" /><button class="removeIns px-3 py-2 bg-gray-200 rounded hidden"><i class="fas fa-trash"></i></button></div>'; document.getElementById('uploadMsg').innerText=''; }
+
+    document.getElementById('submitRecipeBtn').addEventListener('click', async ()=>{
+      const currentUser = auth.currentUser;
+      if(!currentUser || !currentUser.emailVerified){ alert('Előbb jelentkezz be, és erősítsd meg az e-mail címedet.'); return; }
+      const titleOriginal = document.getElementById('uploadTitle').value.trim();
+      if(!titleOriginal){ document.getElementById('uploadMsg').innerText='Adj meg egy étel nevet.'; return; }
+      const categoryRaw = document.getElementById('uploadCategory').value || 'egyeb';
+      const category = categoryRaw.toString().toLowerCase().trim();
+      const time = document.getElementById('uploadTime').value.trim();
+      const difficulty = document.getElementById('uploadDifficulty').value;
+      const tip = document.getElementById('uploadTip').value.trim();
+      const imageFile = document.getElementById('uploadImage').files[0];
+      const ingredients = Array.from(document.querySelectorAll('.ingredientInput')).map(i=>i.value.trim()).filter(Boolean);
+      const instructions = Array.from(document.querySelectorAll('.instructionInput')).map(i=>i.value.trim()).filter(Boolean);
+      if(ingredients.length===0){ document.getElementById('uploadMsg').innerText='Adj meg legalább egy hozzávalót.'; return; }
+      if(instructions.length===0){ document.getElementById('uploadMsg').innerText='Adj meg legalább egy elkészítési lépést.'; return; }
+      document.getElementById('uploadMsg').innerText='Feltöltés... Kérlek várj.';
+      const recipesCollection = collection(db,'recipes');
+      const newDocRef = doc(recipesCollection);
+      const newId = newDocRef.id;
+      const nowClientISO = new Date().toISOString();
+      const imageKeyword = removeDiacritics(titleOriginal).toLowerCase().replace(/\s+/g,',');
+      const recipeObj = { id:newId, title:titleOriginal, category, time, difficulty, imageKeyword, ingredients, instructions, tip, createdBy: currentUser.uid, createdByName: currentUser.displayName || currentUser.email, createdAtClient: nowClientISO, createdAtServer: serverTimestamp() };
+
+      try{
+        if(imageFile){
+          // read as Data URL and save to RTDB under images/{newId}
+          try{
+            const dataURL = await new Promise((res, rej) => {
+              const reader = new FileReader();
+              reader.onload = e => res(e.target.result);
+              reader.onerror = e => rej(e);
+              reader.readAsDataURL(imageFile);
+            });
+            const rtdbKey = `images/${newId}`;
+            await saveImageToRTDB(rtdbKey, dataURL);
+            recipeObj.imageKey = rtdbKey;
+          }catch(imgErr){ console.error('Recipe image RTDB save failed', imgErr); }
+        }
+        await setDoc(newDocRef, recipeObj);
+        document.getElementById('uploadMsg').innerText='Sikeres feltöltés!';
+        setTimeout(()=> closeUploadModal(),800);
+      }catch(err){ console.error('Saving recipe failed', err); document.getElementById('uploadMsg').innerText='Hiba: '+(err.message||err); }
+    });
+
+    /* Firestore listener */
+    const recipesCol = collection(db,'recipes');
+    const recipesQuery = query(recipesCol, orderBy('createdAtClient','desc'));
+    onSnapshot(recipesQuery, snapshot=>{
+      firestoreRecipes = snapshot.docs.map(d=>{
+        const data = d.data();
+        return {
+          id: data.id || d.id,
+          title: data.title || '',
+          category: (data.category||'egyeb').toString().toLowerCase().trim(),
+          time: data.time || '',
+          difficulty: data.difficulty || '',
+          imageKeyword: data.imageKeyword || removeDiacritics(data.title || '').toLowerCase().replace(/\s+/g,','),
+          ingredients: data.ingredients || [],
+          instructions: data.instructions || [],
+          tip: data.tip || '',
+          imageKey: data.imageKey || '',
+          createdBy: data.createdBy || '',
+          createdAtClient: data.createdAtClient || ''
+        };
+      });
+      filterAndSearch();
+    }, err=>{ console.error('Firestore snapshot err', err); });
+
+    /* Search & Category filter */
+    searchInput.addEventListener('input', filterAndSearch);
+    categoryBtns.forEach(btn => { const cat = (btn.dataset.cat || 'all').toString().toLowerCase().trim(); btn.addEventListener('click', ()=> filterRecipes(cat)); });
+    let currentFilter = 'all';
+    function filterRecipes(category){ currentFilter = (category||'all').toString().toLowerCase().trim(); categoryBtns.forEach(b=>b.classList.remove('active','bg-red-900','text-white','border-red-900','font-bold')); const activeBtn = Array.from(categoryBtns).find(b => (b.dataset.cat||'').toString().toLowerCase().trim() === currentFilter); if(activeBtn) activeBtn.classList.add('active','bg-red-900','text-white'); filterAndSearch(); }
+    function filterAndSearch(){ const q = (searchInput.value || '').toLowerCase(); const filtered = (firestoreRecipes || []).filter(item=>{ const itemCat = (item.category || '').toString().toLowerCase().trim(); const catMatch = currentFilter === 'all' || itemCat === currentFilter; const titleMatch = (item.title || '').toLowerCase().includes(q); const ingMatch = (item.ingredients || []).some(i=> i.toLowerCase().includes(q)); return catMatch && (titleMatch || ingMatch || q === ''); }); renderRecipes(filtered); }
+
+    /* Modal buttons wiring */
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('closeAuthModalBtn').addEventListener('click', closeAuthModal);
+    document.getElementById('closeUploadModalBtn').addEventListener('click', closeUploadModal);
+    document.getElementById('cancelUploadBtn').addEventListener('click', closeUploadModal);
+
+    // Expose for safety
+    window.filterRecipes = filterRecipes;
+    window.openAuthModal = openAuthModal;
+    window.openUploadModal = openUploadModal;
+    window.closeUploadModal = closeUploadModal;
+    window.closeModal = closeModal;
+
+    /* Init */
+    updateAuthUI();
+    renderRecipes([]);
+  </script>
 </body>
 </html>
