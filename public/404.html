@@ -3,26 +3,35 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Oldal nem található - wCook</title>
+    <title>Hoppá, a kapcsolat megszakadt! - 404</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Lato', sans-serif;
-        }
-        h1, .font-playfair {
-            font-family: 'Playfair Display', serif;
-        }
+        body { font-family: 'Lato', sans-serif; background-color: #f3f4f6; background-image: url("https://www.transparenttextures.com/patterns/cubes.png"); }
+        h1, .serif-font { font-family: 'Playfair Display', serif; }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-    <div class="text-center">
-        <h1 class="text-6xl font-bold font-playfair text-gray-800">404</h1>
-        <p class="text-2xl font-light text-gray-600 mt-4">Hoppá! Az oldal nem található.</p>
-        <p class="mt-2 text-gray-500">Úgy tűnik, egy olyan linkre tévedtél, ami már nem létezik vagy megváltozott.</p>
-        <div class="mt-8">
-            <a href="/" class="px-6 py-3 bg-amber-600 text-white font-bold rounded-lg shadow-md hover:bg-amber-700 transition-colors duration-300">
-                Vissza a főoldalra
+<body class="antialiased text-gray-800">
+    <div class="flex flex-col items-center justify-center min-h-screen text-center px-4">
+        
+        <!-- Disconnected Plugs SVG Icon -->
+        <div class="w-24 h-24 text-gray-400 mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+            </svg>
+        </div>
+        
+        <h1 class="text-4xl md:text-5xl font-bold serif-font text-red-900">404 - A kapcsolat megszakadt</h1>
+        <p class="text-lg text-gray-600 mt-4 max-w-lg">
+            Hoppá! Úgy tűnik, ez az oldal nem elérhető, vagy a recept elveszett a konyhában.
+        </p>
+        <p class="mt-2 text-gray-500">
+            Talán egy olyan linkre kattintottál, ami már nem aktuális, vagy csak elgépeltél valamit.
+        </p>
+        
+        <div class="mt-10">
+            <a href="/" class="px-8 py-3 bg-red-800 text-white font-bold rounded-full shadow-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105">
+                Vissza a Főoldalra
             </a>
         </div>
     </div>
